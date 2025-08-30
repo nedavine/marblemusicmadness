@@ -211,6 +211,24 @@ window.addEventListener('resize', () =>
 })
 
 /**
+ * Tilt controls
+ */
+const cursor = { x: 0, y: 0 }
+window.addEventListener('mousemove', (event) =>
+{
+    cursor.x = (event.clientX / sizes.width) * 2 - 1
+    cursor.y = (event.clientY / sizes.height) * 2 - 1
+    console.log(cursor)
+})
+
+const tilt = { x: 0, z: 0 }   // current eased tilt in radians
+const maxTilt = 0.2           // limit tilt amplitude, ~11.5°
+const tiltEase = 5            // higher feels snappier
+
+// Reusable quaternion to convert THREE euler -> CANNON quaternion
+const _qTarget = new THREE.Quaternion()
+
+/**
  * Camera
  */
 // Base camera
@@ -244,6 +262,20 @@ const tick = () =>
     const elapsedTime = clock.getElapsedTime()
     const deltaTime = elapsedTime - oldElapsedTime
     oldElapsedTime = elapsedTime
+
+    // Mouse driven floor tilt (subtle with easing)
+    const targetTiltX =  cursor.y * maxTilt   // pitch the board with vertical mouse
+    const targetTiltZ = -cursor.x * maxTilt   // roll the board with horizontal mouse
+
+    tilt.x += (targetTiltX - tilt.x) * tiltEase * deltaTime
+    tilt.z += (targetTiltZ - tilt.z) * tiltEase * deltaTime
+
+// Apply to THREE floor mesh (base orientation is -PI/2 around X)
+    floor.rotation.set(- Math.PI * 0.5 + tilt.x, 0, tilt.z)
+
+// Match the CANNON floor body to the THREE rotation
+    _qTarget.setFromEuler(new THREE.Euler(floor.rotation.x, floor.rotation.y, floor.rotation.z, 'XYZ'))
+    floorBody.quaternion.set(_qTarget.x, _qTarget.y, _qTarget.z, _qTarget.w)
 
     // Update physics
     world.step(1 / 60, deltaTime, 3)
