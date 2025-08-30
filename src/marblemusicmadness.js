@@ -152,7 +152,18 @@ const createSphere = (radius, position) =>
     objectsToUpdate.push({ mesh, body })
 }
 
-
+// Spawn a sphere on click (same behavior as GUI button)
+canvas.addEventListener('pointerdown', () =>
+{
+    createSphere(
+        Math.random() * 0.5,
+        {
+            x: (Math.random() - 0.5) * 3,
+            y: 3,
+            z: (Math.random() - 0.5) * 3
+        }
+    )
+})
 /**
  * Floor
  */
